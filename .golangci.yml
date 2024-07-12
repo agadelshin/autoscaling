@@ -108,6 +108,8 @@ linters-settings:
 
   # see: <https://golangci-lint.run/usage/linters/#govet>
   govet:
+    enable:
+      - unusedresult
     # when check-shadowing is enabled, it prevents code like
     #
     #   foo, err := getFoo()
