@@ -167,18 +167,23 @@ func (r *VMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
+	statusBefore := vm.Status.DeepCopy()
 	if err := r.doReconcile(ctx, &vm); err != nil {
 		r.Recorder.Eventf(&vm, corev1.EventTypeWarning, "Failed",
 			"Failed to reconcile (%s): %s", vm.Name, err)
-		if err := r.patchStatus(ctx, req.NamespacedName, vm.Status); err != nil {
-			log.Error(err, "Unable to update status for VirtualMachine")
+		if !DeepEqual(statusBefore, vm.Status) {
+			if err := r.patchStatus(ctx, req.NamespacedName, vm.Status); err != nil {
+				log.Error(err, "Unable to update status for VirtualMachine", "virtualmachine", vm.Name)
+			}
 		}
 		return ctrl.Result{}, err
 	}
 
-	if err := r.patchStatus(ctx, req.NamespacedName, vm.Status); err != nil {
-		log.Error(err, "Unable to update status for VirtualMachine")
-		return ctrl.Result{}, err
+	if !DeepEqual(statusBefore, vm.Status) {
+		if err := r.patchStatus(ctx, req.NamespacedName, vm.Status); err != nil {
+			log.Error(err, "Unable to update status for VirtualMachine", "virtualmachine", vm.Name)
+			return ctrl.Result{}, err
+		}
 	}
 
 	return ctrl.Result{RequeueAfter: time.Second}, nil
